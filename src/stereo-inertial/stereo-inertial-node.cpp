@@ -4,9 +4,9 @@
 
 using std::placeholders::_1;
 
-StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM, const string &strSettingsFile, const string &strDoRectify, const string &strDoEqual) :
-    Node("ORB_SLAM3_ROS2"),
-    SLAM_(SLAM)
+StereoInertialNode::StereoInertialNode(ORB_SLAM3::System* SLAM, const string& strSettingsFile,
+                                       const string& strDoRectify, const string& strDoEqual)
+    : Node("ORB_SLAM3_ROS2"), SLAM_(SLAM)
 {
     stringstream ss_rec(strDoRectify);
     ss_rec >> boolalpha >> doRectify_;
@@ -46,20 +46,24 @@ StereoInertialNode::StereoInertialNode(ORB_SLAM3::System *SLAM, const string &st
         int rows_r = fsSettings["RIGHT.height"];
         int cols_r = fsSettings["RIGHT.width"];
 
-        if (K_l.empty() || K_r.empty() || P_l.empty() || P_r.empty() || R_l.empty() || R_r.empty() || D_l.empty() || D_r.empty() ||
-            rows_l == 0 || rows_r == 0 || cols_l == 0 || cols_r == 0)
+        if (K_l.empty() || K_r.empty() || P_l.empty() || P_r.empty() || R_l.empty() || R_r.empty() || D_l.empty()
+            || D_r.empty() || rows_l == 0 || rows_r == 0 || cols_l == 0 || cols_r == 0)
         {
             cerr << "ERROR: Calibration parameters to rectify stereo are missing!" << endl;
             assert(0);
         }
 
-        cv::initUndistortRectifyMap(K_l, D_l, R_l, P_l.rowRange(0, 3).colRange(0, 3), cv::Size(cols_l, rows_l), CV_32F, M1l_, M2l_);
-        cv::initUndistortRectifyMap(K_r, D_r, R_r, P_r.rowRange(0, 3).colRange(0, 3), cv::Size(cols_r, rows_r), CV_32F, M1r_, M2r_);
+        cv::initUndistortRectifyMap(K_l, D_l, R_l, P_l.rowRange(0, 3).colRange(0, 3), cv::Size(cols_l, rows_l), CV_32F,
+                                    M1l_, M2l_);
+        cv::initUndistortRectifyMap(K_r, D_r, R_r, P_r.rowRange(0, 3).colRange(0, 3), cv::Size(cols_r, rows_r), CV_32F,
+                                    M1r_, M2r_);
     }
 
     subImu_ = this->create_subscription<ImuMsg>("imu", 1000, std::bind(&StereoInertialNode::GrabImu, this, _1));
-    subImgLeft_ = this->create_subscription<ImageMsg>("camera/left", 100, std::bind(&StereoInertialNode::GrabImageLeft, this, _1));
-    subImgRight_ = this->create_subscription<ImageMsg>("camera/right", 100, std::bind(&StereoInertialNode::GrabImageRight, this, _1));
+    subImgLeft_ = this->create_subscription<ImageMsg>("camera/left", 100,
+                                                      std::bind(&StereoInertialNode::GrabImageLeft, this, _1));
+    subImgRight_ = this->create_subscription<ImageMsg>("camera/right", 100,
+                                                       std::bind(&StereoInertialNode::GrabImageRight, this, _1));
 
     syncThread_ = new std::thread(&StereoInertialNode::SyncWithImu, this);
 }
@@ -89,7 +93,9 @@ void StereoInertialNode::GrabImageLeft(const ImageMsg::SharedPtr msgLeft)
     bufMutexLeft_.lock();
 
     if (!imgLeftBuf_.empty())
+    {
         imgLeftBuf_.pop();
+    }
     imgLeftBuf_.push(msgLeft);
 
     bufMutexLeft_.unlock();
@@ -100,7 +106,9 @@ void StereoInertialNode::GrabImageRight(const ImageMsg::SharedPtr msgRight)
     bufMutexRight_.lock();
 
     if (!imgRightBuf_.empty())
+    {
         imgRightBuf_.pop();
+    }
     imgRightBuf_.push(msgRight);
 
     bufMutexRight_.unlock();
@@ -115,7 +123,7 @@ cv::Mat StereoInertialNode::GetImage(const ImageMsg::SharedPtr msg)
     {
         cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::MONO8);
     }
-    catch (cv_bridge::Exception &e)
+    catch (cv_bridge::Exception& e)
     {
         RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
     }
@@ -166,7 +174,9 @@ void StereoInertialNode::SyncWithImu()
                 continue;
             }
             if (tImLeft > Utility::StampToSec(imuBuf_.back()->header.stamp))
+            {
                 continue;
+            }
 
             bufMutexLeft_.lock();
             imLeft = GetImage(imgLeftBuf_.front());
@@ -187,13 +197,18 @@ void StereoInertialNode::SyncWithImu()
                 while (!imuBuf_.empty() && Utility::StampToSec(imuBuf_.front()->header.stamp) <= tImLeft)
                 {
                     double t = Utility::StampToSec(imuBuf_.front()->header.stamp);
-                    cv::Point3f acc(imuBuf_.front()->linear_acceleration.x, imuBuf_.front()->linear_acceleration.y, imuBuf_.front()->linear_acceleration.z);
-                    cv::Point3f gyr(imuBuf_.front()->angular_velocity.x, imuBuf_.front()->angular_velocity.y, imuBuf_.front()->angular_velocity.z);
+                    cv::Point3f acc(imuBuf_.front()->linear_acceleration.x, imuBuf_.front()->linear_acceleration.y,
+                                    imuBuf_.front()->linear_acceleration.z);
+                    cv::Point3f gyr(imuBuf_.front()->angular_velocity.x, imuBuf_.front()->angular_velocity.y,
+                                    imuBuf_.front()->angular_velocity.z);
                     vImuMeas.push_back(ORB_SLAM3::IMU::Point(acc, gyr, t));
                     imuBuf_.pop();
                 }
             }
             bufMutex_.unlock();
+
+            std::cout << "TRACK: t=" << tImLeft << " imu=" << vImuMeas.size() << " img=" << imLeft.cols << "x"
+                      << imLeft.rows << std::endl;
 
             if (bClahe_)
             {

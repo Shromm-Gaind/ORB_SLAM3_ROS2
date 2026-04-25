@@ -1,0 +1,87 @@
+%YAML:1.0
+#--------------------------------------------------------------------------------------------
+# ORB-SLAM3 monocular config for BlueROV2 Low-Light HD USB Camera
+#   - 1920x1080 @ 20 fps
+#   - Underwater configuration: ~110 deg horizontal FOV (dome-refracted)
+#   - Pinhole approximation (dome refraction NOT properly modeled; acceptable
+#     for short trajectories but will accumulate error on long ones)
+#   - Zero distortion assumed (manufacturer spec: ~1% lens distortion; dome
+#     adds some but is hard to model without calibration)
+#
+# Tuning notes for low-contrast underwater:
+#   - ORBextractor thresholds lowered so features are detected in smooth regions
+#   - nFeatures increased from 1000 -> 2000 for 1080p (EuRoC was 752x480)
+#   - Use CLAHE-preprocessed frames for input if possible; this config assumes
+#     they've already been enhanced
+#--------------------------------------------------------------------------------------------
+
+#--------------------------------------------------------------------------------------------
+# System config
+#--------------------------------------------------------------------------------------------
+# Uncomment to save/reload a session Atlas:
+#System.LoadAtlasFromFile: "Session_BlueROV2_Mono"
+#System.SaveAtlasToFile: "Session_BlueROV2_Mono"
+
+File.version: "1.0"
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters
+#--------------------------------------------------------------------------------------------
+Camera.type: "PinHole"
+
+# Intrinsics derived from camera spec: 110 deg horizontal FOV at 1920x1080.
+# fx = (width/2) / tan(HFOV/2) = 960 / tan(55 deg) ~= 672
+# Principal point assumed at image center (no calibration available).
+Camera1.fx: 336.0
+Camera1.fy: 336.0
+Camera1.cx: 480.0
+Camera1.cy: 270.0
+
+# Distortion: assumed zero. If you later obtain real distortion coefficients,
+# fill these in.
+Camera1.k1: 0.0
+Camera1.k2: 0.0
+Camera1.p1: 0.0
+Camera1.p2: 0.0
+Camera1.k3: 0.0
+
+Camera.width: 960
+Camera.height: 540
+Camera.fps: 12
+# Color order: 1 if RGB, 0 if BGR. cv_bridge-published bgr8 is 0.
+# (If you publish as rgb8 instead, change to 1.)
+Camera.RGB: 0
+
+# Image scale: downscale to 0.5 if performance is a problem on 1080p.
+Camera.imageScale: 0.25
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+# More features for 1080p than EuRoC's 752x480 setup
+ORBextractor.nFeatures: 2000
+
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+
+# FAST thresholds LOWERED for low-contrast underwater scenes.
+# EuRoC defaults were 20/7; these are about half.
+# If you see even fewer features than desired, go lower (e.g. 7/3).
+# If you see too many noisy features, raise back toward defaults.
+ORBextractor.iniThFAST: 10
+ORBextractor.minThFAST: 4
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500.0
+Viewer.imageViewScale: 1.0

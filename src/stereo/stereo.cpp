@@ -1,16 +1,15 @@
-#include<iostream>
-#include<algorithm>
-#include<fstream>
-#include<chrono>
+#include <algorithm>
+#include <chrono>
+#include <fstream>
+#include <iostream>
 
+#include "System.h"
 #include "rclcpp/rclcpp.hpp"
 #include "stereo-slam-node.hpp"
 
-#include "System.h"
-
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    if(argc < 4)
+    if (argc < 4)
     {
         std::cerr << "\nUsage: ros2 run orbslam stereo path_to_vocabulary path_to_settings do_rectify" << std::endl;
         return 1;
@@ -27,7 +26,9 @@ int main(int argc, char **argv)
     auto node = std::make_shared<StereoSlamNode>(&pSLAM, argv[2], argv[3]);
     std::cout << "============================ " << std::endl;
 
-    rclcpp::spin(node);
+    rclcpp::executors::MultiThreadedExecutor exec;
+    exec.add_node(node);
+    exec.spin();
     rclcpp::shutdown();
 
     return 0;

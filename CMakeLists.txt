@@ -15,8 +15,14 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(message_filters REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(Pangolin REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -24,6 +30,7 @@ find_package(ORB_SLAM3 REQUIRED)
 
 include_directories(
   include
+  ${EIGEN3_INCLUDE_DIR}
   ${ORB_SLAM3_ROOT_DIR}/include
   ${ORB_SLAM3_ROOT_DIR}/include/CameraModels
 )
@@ -32,6 +39,7 @@ link_directories(
   include
 )
 
+# ---- Existing targets (unchanged) ----
 add_executable(mono
   src/monocular/mono.cpp
   src/monocular/monocular-slam-node.cpp
@@ -46,12 +54,25 @@ add_executable(rgbd
 ament_target_dependencies(rgbd rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin)
 target_link_libraries(rgbd ${OpenCV_LIBS})
 
+# ---- Stereo target with new dependencies for publishers + TF ----
 add_executable(stereo
   src/stereo/stereo.cpp
   src/stereo/stereo-slam-node.cpp
 )
-ament_target_dependencies(stereo rclcpp sensor_msgs cv_bridge message_filters ORB_SLAM3 Pangolin)
-target_link_libraries(stereo ${OpenCV_LIBS})
+ament_target_dependencies(stereo
+  rclcpp
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  cv_bridge
+  message_filters
+  tf2
+  tf2_ros
+  tf2_eigen
+  ORB_SLAM3
+  Pangolin
+)
+target_link_libraries(stereo ${OpenCV_LIBS} Eigen3::Eigen)
 
 add_executable(stereo-inertial
   src/stereo-inertial/stereo-inertial.cpp
